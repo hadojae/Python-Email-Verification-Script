@@ -1,33 +1,36 @@
 import re
 import smtplib
 import dns.resolver
+import argparse
+
+#argparse
+parser = argparse.ArgumentParser(description="Check to see if email address is legitimate")
+parser.add_argument('-e','--email', help='Email to check',required=True,default=False)
+args = parser.parse_args()
 
 # Address used for SMTP MAIL FROM command  
 fromAddress = 'corn@bt.com'
 
 # Simple Regex for syntax checking
-regex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
+regex = "(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
 # Email address to verify
-inputAddress = input('Please enter the emailAddress to verify:')
-addressToVerify = str(inputAddress)
+addressToVerify = str(args.email)
 
 # Syntax check
 match = re.match(regex, addressToVerify)
 if match == None:
-	print('Bad Syntax')
+	print('[-] %s does not appear to be formatted correctly.') % addressToVerify
 	raise ValueError('Bad Syntax')
 
 # Get domain for DNS lookup
 splitAddress = addressToVerify.split('@')
 domain = str(splitAddress[1])
-print('Domain:', domain)
 
 # MX record lookup
 records = dns.resolver.query(domain, 'MX')
 mxRecord = records[0].exchange
 mxRecord = str(mxRecord)
-
 
 # SMTP lib setup (use debug level for full output)
 server = smtplib.SMTP()
@@ -40,11 +43,8 @@ server.mail(fromAddress)
 code, message = server.rcpt(str(addressToVerify))
 server.quit()
 
-#print(code)
-#print(message)
-
 # Assume SMTP response 250 is success
 if code == 250:
-	print('Success')
+	print('[+] %s has valid formatting and is an active email address') % addressToVerify
 else:
-	print('Bad')
+	print('[-] % has valid formatting but is not an active email address') % addressToVerify
